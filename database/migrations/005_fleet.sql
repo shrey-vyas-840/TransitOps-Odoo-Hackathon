@@ -236,3 +236,106 @@ CREATE TRIGGER trg_maintenance_updated_at
 BEFORE UPDATE ON maintenance_records
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
+
+-- ==========================================================
+-- PHASE 7 - FUEL & EXPENSE MANAGEMENT
+-- ==========================================================
+
+CREATE TABLE fuel_logs (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    organization_id UUID NOT NULL REFERENCES organizations(id),
+
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id),
+
+    driver_id UUID REFERENCES drivers(id),
+
+    trip_id UUID REFERENCES trips(id),
+
+    fuel_type_id UUID REFERENCES fuel_types(id),
+
+    fuel_date DATE NOT NULL,
+
+    odometer_reading NUMERIC(12,2) NOT NULL,
+
+    quantity_liters NUMERIC(10,2) NOT NULL,
+
+    price_per_liter NUMERIC(10,2) NOT NULL,
+
+    total_amount NUMERIC(12,2) GENERATED ALWAYS AS
+    (quantity_liters * price_per_liter) STORED,
+
+    fuel_station VARCHAR(150),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+------------------------------------------------------------
+
+CREATE TABLE expenses (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    organization_id UUID NOT NULL REFERENCES organizations(id),
+
+    trip_id UUID REFERENCES trips(id),
+
+    vehicle_id UUID REFERENCES vehicles(id),
+
+    expense_category VARCHAR(50)
+    CHECK (
+        expense_category IN (
+            'Fuel',
+            'Toll',
+            'Repair',
+            'Insurance',
+            'Salary',
+            'Other'
+        )
+    ),
+
+    amount NUMERIC(12,2) NOT NULL,
+
+    expense_date DATE NOT NULL,
+
+    description TEXT,
+
+    created_by UUID REFERENCES users(id),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+------------------------------------------------------------
+
+CREATE INDEX idx_fuel_vehicle
+ON fuel_logs(vehicle_id);
+
+CREATE INDEX idx_fuel_trip
+ON fuel_logs(trip_id);
+
+CREATE INDEX idx_expense_trip
+ON expenses(trip_id);
+
+CREATE INDEX idx_expense_vehicle
+ON expenses(vehicle_id);
+
+-- ==========================================================
+-- TRIGGERS
+-- ==========================================================
+
+CREATE TRIGGER trg_fuel_logs_updated_at
+BEFORE UPDATE ON fuel_logs
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_expenses_updated_at
+BEFORE UPDATE ON expenses
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
