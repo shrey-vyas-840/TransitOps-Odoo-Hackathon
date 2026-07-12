@@ -141,3 +141,98 @@ CREATE TRIGGER trg_drivers_updated_at
 BEFORE UPDATE ON drivers
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
+
+-- ==========================================================
+-- PHASE 6 - MAINTENANCE MODULE
+-- ==========================================================
+
+CREATE TABLE maintenance_records (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    organization_id UUID NOT NULL REFERENCES organizations(id),
+
+    vehicle_id UUID NOT NULL REFERENCES vehicles(id),
+
+    maintenance_type VARCHAR(50)
+    CHECK (
+        maintenance_type IN (
+            'Preventive',
+            'Corrective',
+            'Emergency',
+            'Inspection'
+        )
+    ),
+
+    issue_description TEXT,
+
+    service_provider VARCHAR(150),
+
+    estimated_cost NUMERIC(12,2),
+
+    actual_cost NUMERIC(12,2),
+
+    scheduled_date DATE,
+
+    completed_date DATE,
+
+    next_service_due DATE,
+
+    odometer_reading NUMERIC(12,2),
+
+    maintenance_status VARCHAR(30)
+    CHECK (
+        maintenance_status IN (
+            'Scheduled',
+            'In Progress',
+            'Completed',
+            'Cancelled'
+        )
+    ) DEFAULT 'Scheduled',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+---------------------------------------------------------
+
+CREATE TABLE maintenance_parts (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    maintenance_id UUID NOT NULL
+    REFERENCES maintenance_records(id)
+    ON DELETE CASCADE,
+
+    part_name VARCHAR(150) NOT NULL,
+
+    quantity INTEGER DEFAULT 1,
+
+    unit_cost NUMERIC(10,2),
+
+    total_cost NUMERIC(10,2)
+);
+
+---------------------------------------------------------
+
+CREATE INDEX idx_maintenance_vehicle
+ON maintenance_records(vehicle_id);
+
+CREATE INDEX idx_maintenance_status
+ON maintenance_records(maintenance_status);
+
+CREATE INDEX idx_next_service
+ON maintenance_records(next_service_due);
+
+
+-- ==========================================================
+-- TRIGGERS
+-- ==========================================================
+
+CREATE TRIGGER trg_maintenance_updated_at
+BEFORE UPDATE ON maintenance_records
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
