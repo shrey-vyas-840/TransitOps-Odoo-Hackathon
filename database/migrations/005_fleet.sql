@@ -127,3 +127,17 @@ ON vehicle_assignments(vehicle_id);
 
 CREATE INDEX idx_assignment_driver
 ON vehicle_assignments(driver_id);
+
+-- ==========================================================
+-- TRIGGERS
+-- ==========================================================
+
+CREATE TRIGGER trg_vehicles_updated_at
+BEFORE UPDATE ON vehicles
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER trg_drivers_updated_at
+BEFORE UPDATE ON drivers
+FOR EACH ROW
+EXECUTE FUNCTION set_updated_at();
